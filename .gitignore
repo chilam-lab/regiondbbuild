@@ -1,7 +1,2 @@
 .DS_store
-america_shapes
-continent_shapes
-irregular_regions/*
-regions/*
-world_regions
-temp_regs
+.env
