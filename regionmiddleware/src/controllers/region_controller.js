@@ -105,6 +105,61 @@ exports.get_data_byid = function(req, res) {
 
 
 
+exports.gridid_bypoints = function(req, res) {
+
+	let {points} = req.body;
+
+	if(points == null || points.length == 0){
+		debug("el arreglo esta vacio")
+		return
+	}
+
+	let query_temp = ""
+	let query_points = ""		
+
+	points.forEach((point, index) => {
+				
+		if(index==0){
+			query_points = query_points + " ST_SetSRID(ST_GeomFromText('" + point + "'), 4326)"	
+		}
+		else{
+			query_points = query_points + ", ST_SetSRID(ST_GeomFromText('" + point + "'), 4326)"
+		}
+		
+	})
+
+	query_temp = `select distinct 
+					cg.grid_id, cg.resolution,
+					ggka.footprint_region, region_description 
+					from grid_geojson_64km_aoi ggka
+					join (
+					SELECT unnest(ARRAY[{query_points}]) AS geom_array) as b
+					on st_intersects(ggka.border, b.geom_array )
+					join cat_grid cg 
+					on ggka.footprint_region = cg.region_id 
+					order by cg.grid_id`
+
+	query_temp = query_temp.replace("{query_points}", query_points)
+
+	pool.any(query_temp, {}).then( 
+		function(data) {
+			// debug(data);
+		res.status(200).json({
+			data: data
+		})
+  	})
+  	.catch(error => {
+      debug(error)
+      res.status(403).json({
+      	message: "error al obtener catalogo", 
+      	error: error
+      })
+   	});
+}
+
+
+
+
 
 
 

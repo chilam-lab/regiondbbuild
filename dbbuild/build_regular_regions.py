@@ -186,7 +186,6 @@ try:
             logger.info("region_id: {0}".format(region_id))
 
             
-
             countries = region.split(';')
             create_materialized_view_row  = ('' if aoiid == 1 else ' UNION ALL ') + get_sql(add_region_view)
             counid = 1

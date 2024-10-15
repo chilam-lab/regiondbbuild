@@ -28,4 +28,9 @@ router.route('/region-grids/:id')
   .get(regionCtrl.get_data_byid)
   .post(regionCtrl.get_data_byid)
 
+router.route('/gridid-bypoints')
+  .get(regionCtrl.gridid_bypoints)
+  .post(regionCtrl.gridid_bypoints)
+
+
 module.exports = router;

@@ -15,17 +15,17 @@ SELECT nextval('grid_geojson_{res}km_aoi_seq'::regclass) AS footprint_region,
       		)
     		)
   		)
-		) AS json  
+		) AS json,
   -- ARRAY( SELECT grid_{res}km_aoi.gridid_{res}km FROM grid_{res}km_aoi LEFT JOIN aoi ON ST_Intersects(grid_{res}km_aoi.the_geom, aoi.geom)
   --     WHERE aoi.country = '{country}'
 		-- )::integer[] AS cells,
   -- ST_Envelope(
-    -- ST_Union(
-    --   ARRAY(
-    --     SELECT ST_SimplifyPreserveTopology(aoi.geom, 0.002) FROM aoi 
-    --     WHERE aoi.country='{country}'
-    --     )
-    -- ) as border
+    ST_Union(
+      ARRAY(
+        SELECT ST_SimplifyPreserveTopology(aoi.geom, 0.002) FROM aoi 
+        WHERE aoi.country='{country}'
+        )
+    ) as border
   -- ) as border
   -- ARRAY( SELECT gid FROM aoi WHERE country='{country}')::integer[] AS gid
 FROM grid_{res}km_aoi LEFT JOIN aoi ON ST_Intersects(grid_{res}km_aoi.the_geom, aoi.geom)
