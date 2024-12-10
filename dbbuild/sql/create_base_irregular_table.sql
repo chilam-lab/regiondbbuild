@@ -1,3 +1,5 @@
+DROP MATERIALIZED VIEW IF EXISTS grid_geojson_{resolution}km_aoi;
+
 DROP TABLE IF EXISTS grid_{resolution}km_aoi;
 
 CREATE TABLE IF NOT EXISTS 

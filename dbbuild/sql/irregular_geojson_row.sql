@@ -1,4 +1,5 @@
-SELECT nextval('grid_geojson_{res}km_aoi_seq'::regclass) AS footprint_region,
+SELECT {footprint_region} AS footprint_region,
+'{region_desc}' as region_description,
 	json_build_object(
 		'type', 'FeatureCollection',
 		'crs',  json_build_object(
@@ -15,11 +16,11 @@ SELECT nextval('grid_geojson_{res}km_aoi_seq'::regclass) AS footprint_region,
     		)
   		)
 		) AS json,  
-  ST_Envelope(
+  -- ST_Envelope(
     ST_Union(
       ARRAY(
-        SELECT the_geom FROM grid_{res}km_aoi 
+        SELECT small_geom FROM grid_{res}km_aoi 
         )
-    )
-  ) as border
+    -- )
+    ) as border
 FROM grid_{res}km_aoi

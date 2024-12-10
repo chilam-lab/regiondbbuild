@@ -1,4 +1,4 @@
-SELECT nextval('grid_geojson_{res}km_aoi_seq'::regclass) AS footprint_region,
+SELECT {footprint_region} AS footprint_region,
   '{region_desc}' as region_description,
 	json_build_object(
 		'type', 'FeatureCollection',

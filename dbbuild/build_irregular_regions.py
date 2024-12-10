@@ -17,8 +17,14 @@ create_smallgeom_table     = './sql/create_indexandsimplifiedgeom_table.sql'
 create_materialized_view = './sql/geojson_views.sql'
 populate_materialized_view   = './sql/irregular_geojson_row.sql' # analisis ok
 
+aoi_file                 = './irregular_regions/sub_aoi.txt'
+
 create_catgrid           = './sql/create_catgrid.sql'
 insert_catgrid_record    = './sql/insert_catgrid_record.sql'
+
+create_cat_footprintregion_table = './sql/create_cat_footprintregion_table.sql'
+insert_cat_footprintregion = './sql/insert_cat_footprintregion.sql'
+
 
 logger = setup_logger()
 load_dotenv() 
@@ -44,8 +50,8 @@ try:
   conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT) 
   cur = conn.cursor()
 
-  # resolutions = ["cue"]
-  resolutions = ["state", "mun", "ageb", "cue"]
+  # resolutions = ["state"]
+  resolutions = ["state", "mun", "ageb","cue"]
 
   for res in resolutions:
     create_base_irregular_table_sql = get_sql(create_base_irregular_table).format(resolution=res)
@@ -76,9 +82,17 @@ try:
   irregular_map["agebs.shp"] = "ageb"
   irregular_map["cuencasmx.shp"] = "cue"
 
+  # resolutions = ["state"]
+  resolutions = ["state", "mun", "ageb","cue"]
 
   for filename in glob.glob('*.shp'):
+
     logger.info('       --> {0}'.format(filename))
+    
+    if irregular_map.get(filename) not in resolutions:
+      logger.info('shape descartado: {0}'.format(irregular_map.get(filename)))      
+      continue
+
     file = ogr.Open(filename)
     layer = file.GetLayer(0)
 
@@ -125,8 +139,8 @@ try:
   conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT) 
   cur = conn.cursor()
 
-  # resolutions = ["cue"]
-  resolutions = ["state", "mun", "ageb", "cue"]
+  # resolutions = ["state"]
+  resolutions = ["state", "mun", "ageb","cue"]
 
   for res in resolutions:
     create_smallgeom_table_sql = get_sql(create_smallgeom_table).format(resolution=res)
@@ -148,30 +162,57 @@ try:
     create_catgrid_sql = get_sql(create_catgrid)
     cur.execute(create_catgrid_sql)
 
+    create_cat_footprintregion_table_sql = get_sql(create_cat_footprintregion_table)
+    cur.execute(create_cat_footprintregion_table_sql)
+
+
     resolutions = ["state", "mun", "ageb","cue"]
-    # resolutions = ["cue"]
-    aoiid = 1
+    # resolutions = ["state"]
+
+    irregular_regions = get_sql(aoi_file).splitlines()
+
+    logger.info("Construyendo {0} regiones".format(len(irregular_regions)))
+    aoiid = 0
+
+    
     
     # Creando materialized views
     for res in resolutions:
         
         create_materialized_view_sql = get_sql(create_materialized_view).format(res=res)
-        create_materialized_view_sql += get_sql(populate_materialized_view).format(res=res)
-        cur.execute(create_materialized_view_sql)
+        # aoiid = 1
 
-        logger.info('Materialized view de resolucion de {0} km creada.'.format(res))
+        for region in irregular_regions:
 
-        # registro en catalago
-        table_view_name = "grid_geojson_" + str(res) + "km_aoi"
-        insert_catgrid_record_sql = get_sql(insert_catgrid_record).format(footprint_region=aoiid,resolution=res,table_view_name=table_view_name)
-        cur.execute(insert_catgrid_record_sql)
-        aoiid += 1
+          insert_cat_footprintregion_sql = get_sql(insert_cat_footprintregion).format(footprint_region=(region+"-"+res))
+          cur.execute(insert_cat_footprintregion_sql)
+          
+          region_id = cur.fetchone()[0] # obtiene el id recien insertado
+          logger.info("region_id: {0}".format(region_id))
+
+          
+          create_materialized_view_sql += get_sql(populate_materialized_view).format(res=res, region_desc= (region+"-"+res), footprint_region=region_id)
+          cur.execute(create_materialized_view_sql)
+
+          logger.info('Materialized view de resolucion de {0} km creada.'.format(res))
+
+          
+          # registro en catalago
+          table_view_name = "grid_geojson_" + str(res) + "km_aoi"
+          insert_catgrid_record_sql = get_sql(insert_catgrid_record).format(footprint_region=region_id, resolution=(region+"-"+res), table_view_name=table_view_name)
+          cur.execute(insert_catgrid_record_sql)
+          # aoiid += 1
 
     cur.close()
     conn.close()
+
 except Exception as e:
     logger.error('Ocurrio un error en la preparacion y ejecucion de queries de materialized views: {0}'.format(str(e)))
     sys.exit()
+
+
+
+
 
 
 
