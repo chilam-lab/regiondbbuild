@@ -195,7 +195,7 @@ try:
 
             for country in countries:
                 if counid == 1:
-                    create_materialized_view_row = create_materialized_view_row.format(res=res, country=country, footprint_region=region_id)        
+                    create_materialized_view_row = create_materialized_view_row.format(res=res, country=country, region_id=region_id)        
                 else:
                     where_filter =  "WHERE aoi.country = '{country}' OR"
                     where_filter = where_filter.format(country=country)
@@ -204,7 +204,7 @@ try:
 
             # registro en catalago
             table_view_name = "grid_geojson_" + str(res) + "km_aoi"
-            insert_catgrid_record_sql = get_sql(insert_catgrid_record).format(footprint_region=region_id,resolution=res,table_view_name=table_view_name)
+            insert_catgrid_record_sql = get_sql(insert_catgrid_record).format(region_id=region_id,resolution=res,table_view_name=table_view_name)
             cur.execute(insert_catgrid_record_sql)
 
             aoiid += 1

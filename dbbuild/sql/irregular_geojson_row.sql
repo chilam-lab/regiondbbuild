@@ -1,4 +1,4 @@
-SELECT {footprint_region} AS footprint_region,
+SELECT {region_id} AS region_id,
 '{region_desc}' as region_description,
 	json_build_object(
 		'type', 'FeatureCollection',

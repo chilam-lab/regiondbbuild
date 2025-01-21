@@ -191,7 +191,7 @@ try:
           logger.info("region_id: {0}".format(region_id))
 
           
-          create_materialized_view_sql += get_sql(populate_materialized_view).format(res=res, region_desc= (region+"-"+res), footprint_region=region_id)
+          create_materialized_view_sql += get_sql(populate_materialized_view).format(res=res, region_desc= (region+"-"+res), region_id=region_id)
           cur.execute(create_materialized_view_sql)
 
           logger.info('Materialized view de resolucion de {0} km creada.'.format(res))
@@ -199,7 +199,7 @@ try:
           
           # registro en catalago
           table_view_name = "grid_geojson_" + str(res) + "km_aoi"
-          insert_catgrid_record_sql = get_sql(insert_catgrid_record).format(footprint_region=region_id, resolution=(region+"-"+res), table_view_name=table_view_name)
+          insert_catgrid_record_sql = get_sql(insert_catgrid_record).format(region_id=region_id, resolution=(region+"-"+res), table_view_name=table_view_name)
           cur.execute(insert_catgrid_record_sql)
           # aoiid += 1
 
