@@ -11,7 +11,7 @@ SELECT {footprint_region} AS footprint_region,
       	'type', 'Feature',
     		'geometry', ST_AsGeoJSON(the_geom)::json,
     		'properties', json_build_object(
-        		'gridid', gridid_{res}km
+        		'cellid', gridid_{res}km
       		)
     		)
   		)
