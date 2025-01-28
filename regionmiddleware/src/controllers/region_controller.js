@@ -130,13 +130,13 @@ exports.gridid_bypoints = function(req, res) {
 
 	query_temp = `select distinct 
 					cg.grid_id, cg.resolution,
-					ggka.footprint_region, region_description 
+					ggka.region_id, region_description 
 					from grid_geojson_64km_aoi ggka
 					join (
 					SELECT unnest(ARRAY[{query_points}]) AS geom_array) as b
 					on st_intersects(ggka.border, b.geom_array )
 					join cat_grid cg 
-					on ggka.footprint_region = cg.region_id 
+					on ggka.region_id = cg.region_id 
 					order by cg.grid_id`
 
 	query_temp = query_temp.replace("{query_points}", query_points)
