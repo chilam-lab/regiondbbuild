@@ -64,7 +64,7 @@ exports.get_data_byid = function(req, res) {
 			debug("region_id: " + region_id)
 
 			return t.one(
-				"select footprint_region, region_description, \"json\" from $<table_view:raw> where footprint_region = $<region_id:raw>", {
+				"select region_id, region_description, \"json\" from $<table_view:raw> where region_id = $<region_id:raw>", {
 					table_view: table_view,
 					region_id: region_id
 				}	

@@ -1,5 +1,6 @@
 -- ** Descomentar SECCION cuando se desea regenerar toda la tabla nuevamente **
-DROP TABLE IF EXISTS grid_64km; 
+-- DROP TABLE IF EXISTS grid_64km; 
+-- ** Termina Descomentar SECCION cuando se desea regenerar toda la tabla nuevamente **
 
 -- esta tabla contiene una malla que abarca de forma rectangular el territorio del mundo o el abarcado por tabla aoi en conjunto
 CREATE TABLE IF NOT EXISTS grid_64km(gridid_64km serial PRIMARY KEY,gcol integer,grow integer,geom geometry(POLYGON, 900913));
