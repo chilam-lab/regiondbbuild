@@ -52,7 +52,7 @@ exports.get_data_byid = function(req, res) {
 	pool.task(t => {
 
 		return t.one(
-			"select region_id, resolution, table_view_name from cat_grid cg where grid_id = $<grid_id:raw>", {
+			"select region_id, resolution, table_view_name, table_cell_name from cat_grid cg where grid_id = $<grid_id:raw>", {
 				grid_id: grid_id
 			}	
 		).then(resp => {
@@ -64,7 +64,7 @@ exports.get_data_byid = function(req, res) {
 			debug("region_id: " + region_id)
 
 			return t.one(
-				"select region_id, region_description, \"json\" from $<table_view:raw> where region_id = $<region_id:raw>", {
+				"select region_id, region_description, \"json\", cells from $<table_view:raw> where region_id = $<region_id:raw>", {
 					table_view: table_view,
 					region_id: region_id
 				}	
@@ -72,7 +72,9 @@ exports.get_data_byid = function(req, res) {
 
 				res.status(200).json({
 					grid_id: grid_id,
-					json: resp.json
+					region_description: resp.region_description,
+					json: resp.json,
+					cells: resp.cells
 				})
 
 			}).catch(error => {
@@ -101,6 +103,69 @@ exports.get_data_byid = function(req, res) {
    	});
   	
 }
+
+
+exports.get_cells_byid = function(req, res) {
+
+	let grid_id = req.params.id
+	debug("grid_id: " + grid_id)
+
+	pool.task(t => {
+
+		return t.one(
+			"select region_id, resolution, table_view_name, table_cell_name from cat_grid cg where grid_id = $<grid_id:raw>", {
+				grid_id: grid_id
+			}	
+		).then(resp => {
+
+			let table_view = resp.table_view_name
+			let region_id = resp.region_id
+
+			debug("table_view: " + table_view)
+			debug("region_id: " + region_id)
+
+			return t.one(
+				"select region_id, region_description, \"json\", cells from $<table_view:raw> where region_id = $<region_id:raw>", {
+					table_view: table_view,
+					region_id: region_id
+				}	
+			).then(resp => {
+
+				res.status(200).json({
+					grid_id: grid_id,
+					region_description: resp.region_description,
+					cells: resp.cells
+				})
+
+			}).catch(error => {
+		      debug(error)
+		      res.status(403).json({
+		      	error: "Error al obtener la malla solicitada", 
+		      	message: "error al obtener el geojson de la malla solicitada, favor de contactar al administrador"
+		      })
+		   	})
+
+		}).catch(error => {
+	      debug(error)
+
+	      res.status(403).json({	      	
+	      	error: "Error al obtener la malla solicitada", 
+	      	message: "grid_id de malla no existente, favor de consultar el catalogo de mallas"
+	      })
+	   	})
+
+	}).catch(error => {
+      debug(error)
+      res.status(403).json({
+      	message: "error general", 
+      	error: error
+      })
+   	});
+  	
+}
+
+
+
 
 
 
