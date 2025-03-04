@@ -14,7 +14,7 @@ create_base_irregular_table           = './sql/create_base_irregular_table.sql'
 insert_irregular_shapefile           = '../sql/insert_irregular_shapefile.sql' 
 create_smallgeom_table     = './sql/create_indexandsimplifiedgeom_table.sql'
 
-create_materialized_view = './sql/geojson_views.sql'
+create_materialized_view = './sql/geojson_irregular_views.sql'
 populate_materialized_view   = './sql/irregular_geojson_row.sql' # analisis ok
 
 aoi_file                 = './irregular_regions/sub_aoi.txt'
@@ -35,13 +35,13 @@ DBNICHEPORT=os.getenv("DBNICHEPORT")
 DBNICHEUSER=os.getenv("DBNICHEUSER")
 DBNICHEPASSWD=os.getenv("DBNICHEPASSWD")
 
-# Obteniendo variables de ambiente
-try:
+# # Obteniendo variables de ambiente
+# try:
 
-    logger.info('lectura de USUARIO: {0} en el HOST: {1} y PUERTO: {2}'.format(DBNICHEUSER, DBNICHEHOST, DBNICHEPORT))
-except Exception as e:
-    logger.error('No se pudieron obtener las variables de entorno requeridas : {0}'.format(str(e)))
-    sys.exit()
+#     logger.info('lectura de USUARIO: {0} en el HOST: {1} y PUERTO: {2}'.format(DBNICHEUSER, DBNICHEHOST, DBNICHEPORT))
+# except Exception as e:
+#     logger.error('No se pudieron obtener las variables de entorno requeridas : {0}'.format(str(e)))
+#     sys.exit()
 
 
 logger.info('Preparando creacion de tablas base de mallas irregulares en DB {0}'.format(DBNICHENAME))
@@ -52,6 +52,7 @@ try:
 
   # resolutions = ["state"]
   resolutions = ["state", "mun", "ageb","cue"]
+  # resolutions = ["mun", "ageb","cue"]
 
   for res in resolutions:
     create_base_irregular_table_sql = get_sql(create_base_irregular_table).format(resolution=res)
@@ -84,6 +85,7 @@ try:
 
   # resolutions = ["state"]
   resolutions = ["state", "mun", "ageb","cue"]
+  # resolutions = ["mun", "ageb","cue"]
 
   for filename in glob.glob('*.shp'):
 
@@ -117,7 +119,7 @@ try:
       wkt = feature.GetGeometryRef().ExportToWkt()
       # logger.info('%s', wkt)
 
-      table = "grid_" + irregular_map.get(filename) + "km_aoi"
+      table = "grid_" + irregular_map.get(filename) + "_aoi"
       # logger.info('table %s', table)
 
       insert_irregular_shapefile_sql = get_sql(insert_irregular_shapefile).format(table=table, key=key, name=name, clave_enlace=clave_enlace, wkt=wkt )
@@ -141,6 +143,7 @@ try:
 
   # resolutions = ["state"]
   resolutions = ["state", "mun", "ageb","cue"]
+  # resolutions = ["mun", "ageb","cue"]
 
   for res in resolutions:
     create_smallgeom_table_sql = get_sql(create_smallgeom_table).format(resolution=res)
@@ -159,15 +162,18 @@ try:
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT) 
     cur = conn.cursor()
 
-    create_catgrid_sql = get_sql(create_catgrid)
-    cur.execute(create_catgrid_sql)
+    # comentar si se ejecutan primero la construccion de las mallas regulares
+    # create_catgrid_sql = get_sql(create_catgrid)
+    # cur.execute(create_catgrid_sql)
 
-    create_cat_footprintregion_table_sql = get_sql(create_cat_footprintregion_table)
-    cur.execute(create_cat_footprintregion_table_sql)
+    # comentar si se ejecutan primero la construccion de las mallas regulares
+    # create_cat_footprintregion_table_sql = get_sql(create_cat_footprintregion_table)
+    # cur.execute(create_cat_footprintregion_table_sql)
 
 
     resolutions = ["state", "mun", "ageb","cue"]
     # resolutions = ["state"]
+    # resolutions = ["mun", "ageb","cue"]
 
     irregular_regions = get_sql(aoi_file).splitlines()
 
@@ -180,28 +186,46 @@ try:
     for res in resolutions:
         
         create_materialized_view_sql = get_sql(create_materialized_view).format(res=res)
-        # aoiid = 1
+        aoiid = 1
 
         for region in irregular_regions:
 
-          insert_cat_footprintregion_sql = get_sql(insert_cat_footprintregion).format(footprint_region=(region+"-"+res))
+          insert_cat_footprintregion_sql = get_sql(insert_cat_footprintregion).format(footprint_region=(region))
           cur.execute(insert_cat_footprintregion_sql)
           
           region_id = cur.fetchone()[0] # obtiene el id recien insertado
           logger.info("region_id: {0}".format(region_id))
 
-          
-          create_materialized_view_sql += get_sql(populate_materialized_view).format(res=res, region_desc= (region+"-"+res), region_id=region_id)
-          cur.execute(create_materialized_view_sql)
 
-          logger.info('Materialized view de resolucion de {0} km creada.'.format(res))
+          countries = region.split(';')
+          create_materialized_view_row  = ('' if aoiid == 1 else ' UNION ALL ') + get_sql(populate_materialized_view)
+          counid = 1
 
-          
+          # añade contexto de la region
+          create_materialized_view_row = create_materialized_view_row.replace('{region_desc}', region)
+
+          for country in countries:
+              if counid == 1:
+                  create_materialized_view_row = create_materialized_view_row.format(res=res, country=country, region_id=region_id)        
+              else:
+                  where_filter =  "WHERE aoi.country = '{country}' OR"
+                  where_filter = where_filter.format(country=country)
+                  create_materialized_view_row = create_materialized_view_row.replace('WHERE', where_filter)
+              counid += 1
+
+        
           # registro en catalago
-          table_view_name = "grid_geojson_" + str(res) + "km_aoi"
-          insert_catgrid_record_sql = get_sql(insert_catgrid_record).format(region_id=region_id, resolution=(region+"-"+res), table_view_name=table_view_name)
+          table_view_name = "grid_geojson_" + str(res) + "_aoi"
+          table_cell_name = "grid_" + str(res) + "_aoi"
+          insert_catgrid_record_sql = get_sql(insert_catgrid_record).format(region_id=region_id, resolution=res, table_view_name=table_view_name, table_cell_name=table_cell_name)
           cur.execute(insert_catgrid_record_sql)
-          # aoiid += 1
+
+          aoiid += 1
+          create_materialized_view_sql += create_materialized_view_row
+
+        # create_materialized_view_sql += get_sql(populate_materialized_view).format(res=res, region_desc= region, region_id=region_id)
+        cur.execute(create_materialized_view_sql)
+        logger.info('Materialized view de resolucion de {0} creada.'.format(res))
 
     cur.close()
     conn.close()

@@ -16,9 +16,9 @@ SELECT {region_id} AS region_id,
     		)
   		)
 		) AS json,
-  -- ARRAY( SELECT grid_{res}km_aoi.gridid_{res}km FROM grid_{res}km_aoi LEFT JOIN aoi ON ST_Intersects(grid_{res}km_aoi.the_geom, aoi.geom)
-  --     WHERE aoi.country = '{country}'
-		-- )::integer[] AS cells,
+  ARRAY( SELECT grid_{res}km_aoi.gridid_{res}km FROM grid_{res}km_aoi LEFT JOIN aoi ON ST_Intersects(grid_{res}km_aoi.the_geom, aoi.geom)
+      WHERE aoi.country = '{country}'
+		)::integer[] AS cells,
   -- ST_Envelope(
     ST_Union(
       ARRAY(

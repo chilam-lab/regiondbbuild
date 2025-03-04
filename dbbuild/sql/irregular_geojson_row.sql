@@ -11,16 +11,20 @@ SELECT {region_id} AS region_id,
       	'type', 'Feature',
     		'geometry', ST_AsGeoJSON(small_geom)::json,
     		'properties', json_build_object(
-        		'cellid', gridid_{res}km
+        		'cellid', gridid_{res},
+            'clave', clave
       		)
     		)
   		)
 		) AS json,  
+  ARRAY( SELECT clave FROM grid_{res}_aoi LEFT JOIN aoi ON ST_Intersects(grid_{res}_aoi.the_geom, aoi.geom)
+      WHERE aoi.country = '{country}'
+    )::varchar(50)[] AS cells,
   -- ST_Envelope(
     ST_Union(
       ARRAY(
-        SELECT small_geom FROM grid_{res}km_aoi 
+        SELECT small_geom FROM grid_{res}_aoi 
         )
     -- )
     ) as border
-FROM grid_{res}km_aoi
+FROM grid_{res}_aoi

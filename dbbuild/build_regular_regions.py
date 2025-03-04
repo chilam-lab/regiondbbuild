@@ -109,7 +109,7 @@ try:
 
     # ejecutar solo cuando se crea la tabla por primera vez o se desea regenerar la información
     # creación de la tabla base a 64km de todo el mundo (basado en la tabla de aoi, que supone contener todo el mundo)
-    # create_grid_64km_table_sql = get_sql(create_grid_64km_table)
+    create_grid_64km_table_sql = get_sql(create_grid_64km_table)
 
     # creacion de tablas del area de interes con base al nivel de area y el valor seleccionado, consultar la tabla de de aoi para revisar valores disponibles a los niveles de continente o país
     create_grid_64km_aoi_table_sql = get_sql(create_grid_64km_aoi_table).format(column_area='continent', value='Americas')  
@@ -118,8 +118,8 @@ try:
     create_grid_8km_table_sql = get_sql(create_grid_xxkm_table).format(resolution=8, column_area='country', value='\'Mexico\', \'United States of America\', \'Canada\'') # valores disponibles: column_area: country o continent
     
     # ejecutar solo cuando se crea la tabla por primera vez o se desea regenerar la información
-    # logger.info('Creando tabla malla de 64km mundial')
-    # cur.execute(create_grid_64km_table_sql)
+    logger.info('Creando tabla malla de 64km mundial')
+    cur.execute(create_grid_64km_table_sql)
 
     logger.info('Creando tabla malla de 64km_aoi segun selección')
     cur.execute(create_grid_64km_aoi_table_sql)
@@ -158,8 +158,8 @@ try:
     create_catgrid_sql = get_sql(create_catgrid)
     cur.execute(create_catgrid_sql)
 
-    resolutions = [64, 32, 16, 8]
-    # resolutions = [64]
+    resolutions = ["64", "32", "16", "8"]
+    # resolutions = ["64"]
 
     regions = get_sql(aoi_file).splitlines()
 
@@ -204,7 +204,8 @@ try:
 
             # registro en catalago
             table_view_name = "grid_geojson_" + str(res) + "km_aoi"
-            insert_catgrid_record_sql = get_sql(insert_catgrid_record).format(region_id=region_id,resolution=res,table_view_name=table_view_name)
+            table_cell_name = "grid_" + str(res) + "km_aoi"
+            insert_catgrid_record_sql = get_sql(insert_catgrid_record).format(region_id=region_id,resolution=(res+"km"),table_view_name=table_view_name,table_cell_name=table_cell_name)
             cur.execute(insert_catgrid_record_sql)
 
             aoiid += 1

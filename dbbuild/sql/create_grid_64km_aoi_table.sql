@@ -1,5 +1,5 @@
 -- ** Descomentar solo cuando se desea regenerar toda la tabla nuevamente **
--- DROP TABLE IF EXISTS grid_64km_aoi;
+DROP TABLE IF EXISTS grid_64km_aoi;
 -- ** Termina Descomentar solo cuando se desea regenerar toda la tabla nuevamente **
 
 -- esta tabla contiene una malla que abarca toda la intersección de la tabla aoi con la malla rectangular de grid_64km

@@ -1,5 +1,5 @@
 -- ** Descomentar SECCION cuando se desea regenerar toda la tabla nuevamente **
--- DROP TABLE IF EXISTS grid_64km; 
+DROP TABLE IF EXISTS grid_64km; 
 -- ** Termina Descomentar SECCION cuando se desea regenerar toda la tabla nuevamente **
 
 -- esta tabla contiene una malla que abarca de forma rectangular el territorio del mundo o el abarcado por tabla aoi en conjunto
