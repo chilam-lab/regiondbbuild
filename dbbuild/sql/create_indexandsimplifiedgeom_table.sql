@@ -18,3 +18,6 @@ UPDATE grid_{resolution}_aoi SET small_geom = ST_SimplifyPreserveTopology(the_ge
 DROP INDEX IF EXISTS idx_grid_{resolution}_small_geom;
 
 CREATE INDEX idx_grid_{resolution}_small_geom ON grid_{resolution}_aoi USING GIST (small_geom);
+
+UPDATE grid_{resolution}_aoi SET the_geom = ST_MakeValid(the_geom) where NOT ST_IsValid(the_geom);
+UPDATE grid_{resolution}_aoi SET small_geom = ST_MakeValid(small_geom) where NOT ST_IsValid(small_geom);

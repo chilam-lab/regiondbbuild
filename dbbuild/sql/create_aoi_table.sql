@@ -2,10 +2,11 @@ DROP MATERIALIZED VIEW IF EXISTS grid_geojson_64km_aoi;
 DROP MATERIALIZED VIEW IF EXISTS grid_geojson_32km_aoi;
 DROP MATERIALIZED VIEW IF EXISTS grid_geojson_16km_aoi;
 DROP MATERIALIZED VIEW IF EXISTS grid_geojson_8km_aoi;
-DROP MATERIALIZED VIEW IF EXISTS grid_geojson_statekm_aoi;
-DROP MATERIALIZED VIEW IF EXISTS grid_geojson_munkm_aoi;
-DROP MATERIALIZED VIEW IF EXISTS grid_geojson_agebkm_aoi;
-DROP MATERIALIZED VIEW IF EXISTS grid_geojson_cuekm_aoi;
+DROP MATERIALIZED VIEW IF EXISTS grid_geojson_state_aoi;
+DROP MATERIALIZED VIEW IF EXISTS grid_geojson_mun_aoi;
+DROP MATERIALIZED VIEW IF EXISTS grid_geojson_ageb_aoi;
+DROP MATERIALIZED VIEW IF EXISTS grid_geojson_cue_aoi;
+
 
 DROP TABLE IF EXISTS aoi;
 

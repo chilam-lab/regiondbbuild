@@ -18,7 +18,7 @@ SELECT {region_id} AS region_id,
   		)
 		) AS json,  
   ARRAY( SELECT clave FROM grid_{res}_aoi LEFT JOIN aoi ON ST_Intersects(grid_{res}_aoi.the_geom, aoi.geom)
-      WHERE aoi.country = '{country}'
+      -- WHERE aoi.country = '{country}'
     )::varchar(50)[] AS cells,
   -- ST_Envelope(
     ST_Union(

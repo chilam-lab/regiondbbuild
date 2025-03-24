@@ -11,7 +11,7 @@ from dotenv import load_dotenv, dotenv_values
 
 irregular_regions_folder             = './irregular_regions'
 create_base_irregular_table           = './sql/create_base_irregular_table.sql'
-insert_irregular_shapefile           = '../sql/insert_irregular_shapefile.sql' 
+insert_irregular_shapefile           = './sql/insert_irregular_shapefile.sql' 
 create_smallgeom_table     = './sql/create_indexandsimplifiedgeom_table.sql'
 
 create_materialized_view = './sql/geojson_irregular_views.sql'
@@ -35,6 +35,67 @@ DBNICHEPORT=os.getenv("DBNICHEPORT")
 DBNICHEUSER=os.getenv("DBNICHEUSER")
 DBNICHEPASSWD=os.getenv("DBNICHEPASSWD")
 
+
+class ShapeFileConfig:
+  def __init__(self, filename, filepath, srid, resolution, status, clave_namecol, nombre_namecol, clave_enlace_namecol, encoding='utf-8'):
+    self.filename = filename            # Nombre de referencia del shape
+    self.filepath = filepath    # Ruta al archivo .shp
+    self.srid = srid            # Código EPSG del sistema de referencia
+    self.encoding = encoding    # Codificación de caracteres (opcional)
+    self.clave_namecol = clave_namecol # nombre de la clave en el archivo shape
+    self.nombre_namecol = nombre_namecol # nombre del nombre en el archivo shape
+    self.clave_enlace_namecol = clave_enlace_namecol # nombre de la clave para enlazar otro shape en el archivo shape
+    self.resolution = resolution # resolucion del shape
+    self.status = status # estatus del shape, si esta activo o inactivo
+
+  def __repr__(self):
+    return f"<ShapeFileConfig filename='{self.filename}' filepath='{self.filepath}' srid='{self.srid}' resolution='{self.resolution}' status='{self.status}' clave_namecol={self.cve_name} nombre_namecol={self.nombre_namecol} clave_enlace_namecol={self.clave_enlace_namecol} >"
+
+# lista de shapes a cargar
+shapes = [
+  ShapeFileConfig(
+          filename='estados.shp',
+          filepath=irregular_regions_folder+'/estados.shp',
+          srid=32614,
+          clave_namecol='CVEGEO',
+          nombre_namecol='nombre',
+          clave_enlace_namecol=None,
+          resolution='state',
+          status=True
+      ),
+  ShapeFileConfig(
+          filename='municipios.shp',
+          filepath=irregular_regions_folder+'/municipios.shp',
+          srid=32614,
+          clave_namecol='CVEGEO',
+          nombre_namecol='nombre',
+          clave_enlace_namecol='clave_enla',
+          resolution='mun',
+          status=True
+      ),
+  ShapeFileConfig(
+          filename='agebs.shp',
+          filepath=irregular_regions_folder+'/agebs.shp',
+          srid=32614,
+          clave_namecol='CVEGEO',
+          nombre_namecol='nombre',
+          clave_enlace_namecol='clave_enla',
+          resolution='ageb',
+          status=True
+      ),
+  ShapeFileConfig(
+          filename='cuencasmx.shp',
+          filepath=irregular_regions_folder+'/cuencasmx.shp',
+          srid=32614,
+          clave_namecol='clave',
+          nombre_namecol='nombre',
+          clave_enlace_namecol='clave_enla',
+          resolution='cue',
+          status=True
+      )
+]
+
+
 # # Obteniendo variables de ambiente
 # try:
 
@@ -50,13 +111,14 @@ try:
   conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT) 
   cur = conn.cursor()
 
-  # resolutions = ["state"]
-  resolutions = ["state", "mun", "ageb","cue"]
-  # resolutions = ["mun", "ageb","cue"]
+  for shape in shapes:
+    
+    if shape.status == False:
+      logger.info('shape descartado: {0}'.format(shape.filename))
+      continue
 
-  for res in resolutions:
-    create_base_irregular_table_sql = get_sql(create_base_irregular_table).format(resolution=res)
-    logger.info('Creando malla irregular %s', res)
+    create_base_irregular_table_sql = get_sql(create_base_irregular_table).format(resolution=shape.resolution)
+    logger.info('Creando malla irregular %s', shape.resolution)
     cur.execute(create_base_irregular_table_sql)
 
 except Exception as e:
@@ -72,30 +134,20 @@ try:
 
   cur = conn.cursor()
   
-  os.chdir(irregular_regions_folder)
-    
+  # os.chdir(irregular_regions_folder)
+  # os.chdir('../')
+
   logger.info('Cargando shapefiles')
 
-  # relaciones entre shapes y clave capas
-  irregular_map = {}
-  irregular_map["estados.shp"] = "state"
-  irregular_map["municipios.shp"] = "mun"
-  irregular_map["agebs.shp"] = "ageb"
-  irregular_map["cuencasmx.shp"] = "cue"
+  for shape in shapes:
 
-  # resolutions = ["state"]
-  resolutions = ["state", "mun", "ageb","cue"]
-  # resolutions = ["mun", "ageb","cue"]
+    logger.info('       --> {0}'.format(shape.filename))
 
-  for filename in glob.glob('*.shp'):
-
-    logger.info('       --> {0}'.format(filename))
-    
-    if irregular_map.get(filename) not in resolutions:
-      logger.info('shape descartado: {0}'.format(irregular_map.get(filename)))      
+    if shape.status == False:
+      logger.info('shape descartado: {0}'.format(shape.filename))      
       continue
-
-    file = ogr.Open(filename)
+      
+    file = ogr.Open(shape.filepath)
     layer = file.GetLayer(0)
 
     logger.info('procesando shape %s', file)
@@ -103,29 +155,28 @@ try:
     for i in range(layer.GetFeatureCount()):
       feature = layer.GetFeature(i)
 
-      key = feature.GetField('clave')
+      key = feature.GetField(shape.clave_namecol)
       # logger.info('procesando key %s', key)
-
-      name = feature.GetField('nombre')
+      
+      name = feature.GetField(shape.nombre_namecol)
       # logger.info('procesando name %s', name)
-
-      if filename == "estados.shp":
-        # se requiere para todos los shapes excepto el base (ej: estados)
-        clave_enlace = ''
-      else:
-        clave_enlace = feature.GetField('clave_enla')
-        # logger.info('procesando clave_enlace %s', clave_enlace)
+      
+      clave_enlace = ''
+      if shape.clave_enlace_namecol != None:
+        # logger.info('clave_enlace_namecol is not none')
+        clave_enlace = feature.GetField(shape.clave_enlace_namecol)
+      # logger.info('procesando clave_enlace: %s', clave_enlace)
 
       wkt = feature.GetGeometryRef().ExportToWkt()
       # logger.info('%s', wkt)
 
-      table = "grid_" + irregular_map.get(filename) + "_aoi"
+      table = "grid_" + shape.resolution + "_aoi"
       # logger.info('table %s', table)
 
       insert_irregular_shapefile_sql = get_sql(insert_irregular_shapefile).format(table=table, key=key, name=name, clave_enlace=clave_enlace, wkt=wkt )
       cur.execute(insert_irregular_shapefile_sql)
       
-  os.chdir('../')
+  # os.chdir('../')
 
   cur.close()
   conn.close()
@@ -141,13 +192,14 @@ try:
   conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT) 
   cur = conn.cursor()
 
-  # resolutions = ["state"]
-  resolutions = ["state", "mun", "ageb","cue"]
-  # resolutions = ["mun", "ageb","cue"]
+  for shape in shapes:
+    
+    if shape.status == False:
+      logger.info('shape descartado: {0}'.format(shape.filename))      
+      continue
 
-  for res in resolutions:
-    create_smallgeom_table_sql = get_sql(create_smallgeom_table).format(resolution=res)
-    logger.info('Creando small geom para tabla irregular %s', res)
+    create_smallgeom_table_sql = get_sql(create_smallgeom_table).format(resolution=shape.resolution)
+    logger.info('Creando small geom para tabla irregular %s', shape.resolution)
     cur.execute(create_smallgeom_table_sql)
 
 except Exception as e:
@@ -171,21 +223,20 @@ try:
     # cur.execute(create_cat_footprintregion_table_sql)
 
 
-    resolutions = ["state", "mun", "ageb","cue"]
-    # resolutions = ["state"]
-    # resolutions = ["mun", "ageb","cue"]
-
     irregular_regions = get_sql(aoi_file).splitlines()
 
     logger.info("Construyendo {0} regiones".format(len(irregular_regions)))
     aoiid = 0
 
     
-    
     # Creando materialized views
-    for res in resolutions:
+    for shape in shapes:
+    
+        if shape.status == False:
+          logger.info('shape descartado: {0}'.format(shape.filename))      
+          continue
         
-        create_materialized_view_sql = get_sql(create_materialized_view).format(res=res)
+        create_materialized_view_sql = get_sql(create_materialized_view).format(res=shape.resolution)
         aoiid = 1
 
         for region in irregular_regions:
@@ -206,7 +257,7 @@ try:
 
           for country in countries:
               if counid == 1:
-                  create_materialized_view_row = create_materialized_view_row.format(res=res, country=country, region_id=region_id)        
+                  create_materialized_view_row = create_materialized_view_row.format(res=shape.resolution, country=country, region_id=region_id)        
               else:
                   where_filter =  "WHERE aoi.country = '{country}' OR"
                   where_filter = where_filter.format(country=country)
@@ -215,9 +266,9 @@ try:
 
         
           # registro en catalago
-          table_view_name = "grid_geojson_" + str(res) + "_aoi"
-          table_cell_name = "grid_" + str(res) + "_aoi"
-          insert_catgrid_record_sql = get_sql(insert_catgrid_record).format(region_id=region_id, resolution=res, table_view_name=table_view_name, table_cell_name=table_cell_name)
+          table_view_name = "grid_geojson_" + str(shape.resolution) + "_aoi"
+          table_cell_name = "grid_" + str(shape.resolution) + "_aoi"
+          insert_catgrid_record_sql = get_sql(insert_catgrid_record).format(region_id=region_id, resolution=shape.resolution, table_view_name=table_view_name, table_cell_name=table_cell_name)
           cur.execute(insert_catgrid_record_sql)
 
           aoiid += 1
@@ -225,7 +276,7 @@ try:
 
         # create_materialized_view_sql += get_sql(populate_materialized_view).format(res=res, region_desc= region, region_id=region_id)
         cur.execute(create_materialized_view_sql)
-        logger.info('Materialized view de resolucion de {0} creada.'.format(res))
+        logger.info('Materialized view de resolucion de {0} creada.'.format(shape.resolution))
 
     cur.close()
     conn.close()
