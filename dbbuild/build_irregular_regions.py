@@ -4,7 +4,12 @@ import os
 import sys
 import psycopg2
 import glob
+from osgeo import osr 
 from osgeo import ogr
+from shapely import wkt
+from shapely.geometry import mapping, shape
+import json
+
 from aux_functions import *
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from dotenv import load_dotenv, dotenv_values
@@ -18,6 +23,7 @@ create_materialized_view = './sql/geojson_irregular_views.sql'
 populate_materialized_view   = './sql/irregular_geojson_row.sql' # analisis ok
 
 aoi_file                 = './irregular_regions/sub_aoi.txt'
+insert_srid_requiered    = './sql/insert_srid_required.sql'
 
 create_catgrid           = './sql/create_catgrid.sql'
 insert_catgrid_record    = './sql/insert_catgrid_record.sql'
@@ -37,7 +43,7 @@ DBNICHEPASSWD=os.getenv("DBNICHEPASSWD")
 
 
 class ShapeFileConfig:
-  def __init__(self, filename, filepath, srid, resolution, status, clave_namecol, nombre_namecol, clave_enlace_namecol, encoding='utf-8'):
+  def __init__(self, filename, filepath, srid, resolution, status, EPSG_real, clave_namecol, nombre_namecol, clave_enlace_namecol, encoding='utf-8'):
     self.filename = filename            # Nombre de referencia del shape
     self.filepath = filepath    # Ruta al archivo .shp
     self.srid = srid            # Código EPSG del sistema de referencia
@@ -47,11 +53,14 @@ class ShapeFileConfig:
     self.clave_enlace_namecol = clave_enlace_namecol # nombre de la clave para enlazar otro shape en el archivo shape
     self.resolution = resolution # resolucion del shape
     self.status = status # estatus del shape, si esta activo o inactivo
+    self.EPSG_real = EPSG_real
 
   def __repr__(self):
     return f"<ShapeFileConfig filename='{self.filename}' filepath='{self.filepath}' srid='{self.srid}' resolution='{self.resolution}' status='{self.status}' clave_namecol={self.cve_name} nombre_namecol={self.nombre_namecol} clave_enlace_namecol={self.clave_enlace_namecol} >"
 
 # lista de shapes a cargar
+# NOTA: Se agrega el paremtro EPSG_real, debido a que los shapes puedne tener en sus metadatos un SRID in correcto, por tanto, si se conoce el SRID
+# del archivo agrearlo en este parametro, en caso de no tenerlo se obtendra de lso emtadatos con el riesgo de una reproyección incorrecta en caso de ser direfereten al EPSG:4326
 shapes = [
   ShapeFileConfig(
           filename='estados.shp',
@@ -61,7 +70,8 @@ shapes = [
           nombre_namecol='nombre',
           clave_enlace_namecol=None,
           resolution='state',
-          status=True
+          status=True,
+          EPSG_real=4326
       ),
   ShapeFileConfig(
           filename='municipios.shp',
@@ -71,7 +81,8 @@ shapes = [
           nombre_namecol='nombre',
           clave_enlace_namecol='clave_enla',
           resolution='mun',
-          status=True
+          status=True,
+          EPSG_real=6372
       ),
   ShapeFileConfig(
           filename='agebs.shp',
@@ -81,7 +92,8 @@ shapes = [
           nombre_namecol='nombre',
           clave_enlace_namecol='clave_enla',
           resolution='ageb',
-          status=True
+          status=True,
+          EPSG_real=6372
       ),
   ShapeFileConfig(
           filename='cuencasmx.shp',
@@ -91,7 +103,8 @@ shapes = [
           nombre_namecol='nombre',
           clave_enlace_namecol='clave_enla',
           resolution='cue',
-          status=True
+          status=True,
+          EPSG_real=4326
       )
 ]
 
@@ -126,6 +139,22 @@ except Exception as e:
   sys.exit()
 
 
+logger.info('Insertando SRID comunes en la tabla de spatial_ref_sys')
+try:
+  conn = psycopg2.connect('dbname={0} host={1} port={2} user={3} password={4}'.format(DBNICHENAME, DBNICHEHOST, DBNICHEPORT, DBNICHEUSER, DBNICHEPASSWD))
+  conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT) 
+  cur = conn.cursor()
+
+  insert_srid_requiered_sql = get_sql(insert_srid_requiered)
+  cur.execute(insert_srid_requiered_sql)
+
+  logger.info('SRID comunes insertados')
+  
+except Exception as e:
+  logger.error('Ocurrio un error en inserción de srids: {0}'.format(str(e)))
+  sys.exit()
+
+
 
 logger.info('Preparando creacion de mallas irregulares en DB {0} a partir de shapefiles'.format(DBNICHENAME))
 try:
@@ -146,12 +175,22 @@ try:
     if shape.status == False:
       logger.info('shape descartado: {0}'.format(shape.filename))      
       continue
+
       
     file = ogr.Open(shape.filepath)
     layer = file.GetLayer(0)
 
-    logger.info('procesando shape %s', file)
+    logger.info('procesando shape: %s', file)
 
+    source_srs = layer.GetSpatialRef()
+    if(shape.EPSG_real != None):
+      epsg_code = shape.EPSG_real
+    else:
+      epsg_code = int(source_srs.GetAttrValue("AUTHORITY", 1))
+    
+    logger.info('EPSG del shapefile: %s', epsg_code)
+
+    
     for i in range(layer.GetFeatureCount()):
       feature = layer.GetFeature(i)
 
@@ -167,16 +206,17 @@ try:
         clave_enlace = feature.GetField(shape.clave_enlace_namecol)
       # logger.info('procesando clave_enlace: %s', clave_enlace)
 
-      wkt = feature.GetGeometryRef().ExportToWkt()
-      # logger.info('%s', wkt)
+      
+      geom = feature.GetGeometryRef()
+      wkt = geom.ExportToWkt()
 
+      
       table = "grid_" + shape.resolution + "_aoi"
       # logger.info('table %s', table)
 
-      insert_irregular_shapefile_sql = get_sql(insert_irregular_shapefile).format(table=table, key=key, name=name, clave_enlace=clave_enlace, wkt=wkt )
+      insert_irregular_shapefile_sql = get_sql(insert_irregular_shapefile).format(table=table, key=key, name=name, clave_enlace=clave_enlace, wkt=wkt, srid_origen=epsg_code)
       cur.execute(insert_irregular_shapefile_sql)
-      
-  # os.chdir('../')
+    
 
   cur.close()
   conn.close()

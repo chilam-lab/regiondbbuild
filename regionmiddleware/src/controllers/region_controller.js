@@ -125,7 +125,7 @@ exports.get_cells_byid = function(req, res) {
 			debug("region_id: " + region_id)
 
 			return t.one(
-				"select region_id, region_description, \"json\", cells from $<table_view:raw> where region_id = $<region_id:raw>", {
+				"select region_id, region_description, \"json\", cells, array_length(cells,1) as n from $<table_view:raw> where region_id = $<region_id:raw>", {
 					table_view: table_view,
 					region_id: region_id
 				}	
@@ -134,7 +134,8 @@ exports.get_cells_byid = function(req, res) {
 				res.status(200).json({
 					grid_id: grid_id,
 					region_description: resp.region_description,
-					cells: resp.cells
+					cells: resp.cells,
+					n: resp.n
 				})
 
 			}).catch(error => {
