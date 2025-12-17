@@ -8,7 +8,7 @@ Este repositorio contiene los scripts para la creacion de la base de datos que c
 
 Los scripts para la generación de la base de datos, se encuentran en el directorio dbbuild y buscan la estadarización para el consumo de las mallas y regiones que establecen la coocurrencia geográfica de las diversas variables que existen en los proyectos actuales y posibles proyectos futuros.
 
-El proyecto de servicios, se encuentra dentro de la carpeta regionmiddleware, este proyecto esta desarrolaldo en Node JS con Express. El proyecto despliega los serivicios de bienvenida, el catalogo de áreas de interes (países del mundo), catálogo de vistas disponibles y envio de vista en formato geojson por id.
+El proyecto de servicios, se encuentra dentro de la carpeta regionmiddleware, este proyecto esta desarrolaldo en Node JS con Express. El proyecto despliega los servicios del catálogo de regiones disponibles, envio de región por id en formato geojson y envio de celdas por region por id.
 
 ## Proyecto dbbuild
 
@@ -16,7 +16,7 @@ El proyecto de servicios, se encuentra dentro de la carpeta regionmiddleware, es
 
 Las tablas que son creadas por estos scripts se componen de la siguiente manera:
 
-- Tablas que representan mallas en diferentes resoluciones, ya sean regulares o irregulares, llamados grids.
+- Tablas que representan mallas en diferentes resoluciones, ya sean regulares o irregulares, llamadas grids.
 - Vistas meterializadas que son regiones o subregiones de los grids, por tanto, estan sujetos a la resolución base del grid con el cual fue creado. Se disponibilizan en formato geojson.
 - Tabla catalago de las vistas (region-resolución) disponibles.
 

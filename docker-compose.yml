@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  auth_backend:
+    container_name: regionmiddleware
+    build:
+      context: ./regionmiddleware
+      dockerfile: Dockerfile
+    ports:
+      - "8686:8080"
+    restart: unless-stopped
