@@ -47,7 +47,7 @@ app.use('/regions', regionRouter)
 
 
 // Start the server
-var server = app.listen(port, '0.0.0.0' function () {
+var server = app.listen(port, '0.0.0.0', function () {
   var port = server.address().port
   console.log('Aplicación corriendo en el puerto %s', port)
 })
