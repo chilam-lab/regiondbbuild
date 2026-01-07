@@ -17,10 +17,6 @@ var pool = verb_utils.pool
 var port = config.port || 8080;
 var app = express()
 
-console.log("port: " + config.port)
-console.log("db_name: " + config.db.database)
-console.log("db_port: " + config.db.port)
-
 //app.use(express.static('public'));
 
 app.use(compression({filter:shouldCompress, level:zlib.Z_BEST_COMPRESSION}))

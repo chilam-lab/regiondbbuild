@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:13.11.0-stretch
 
 WORKDIR /usr/src/app
 
