@@ -10,4 +10,4 @@ services:
       - "8686:8080"
     restart: unless-stopped
     env_file:
-      - ./regionmiddleware/.env
+      - .env
