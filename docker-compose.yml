@@ -9,3 +9,6 @@ services:
     ports:
       - "8686:8080"
     restart: unless-stopped
+    environment:
+      # DB
+      DBPORT: ${DBPORT}
