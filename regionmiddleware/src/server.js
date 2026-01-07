@@ -21,6 +21,7 @@ console.log("port: " + config.port)
 console.log("port 2: " + port)
 console.log("db_name: " + config.db.database)
 console.log("db_port: " + config.db.port)
+console.log("db_application_name: " + config.db.application_name)
 
 //app.use(express.static('public'));
 

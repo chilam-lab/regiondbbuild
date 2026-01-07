@@ -9,7 +9,7 @@ const config = {
     user: process.env.DBUSER,
     password: process.env.DBPWD,
     host: process.env.DBHOST,
-    port: process.env.DBPORT,
+    port: 5432,
     application_name: 'expressMiddleware',
     poolSize: 10,
   },
