@@ -4,12 +4,18 @@ var pgp = require('pg-promise')()
 var config = require('../../config')
 
 var pool = verb_utils.pool 
+console.log(pool)
 
 exports.get_aoi = function(req, res) {
 
+	console.log("get_aoi")
+
 	let { } = req.body;
+
 	pool.any("select aoi_id, cve_iso, country, continent from aoi a", {}).then( 
 		function(data) {
+
+			console.log(data)
 			// debug(data);
 		res.status(200).json({
 			data: data
