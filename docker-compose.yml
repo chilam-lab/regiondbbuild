@@ -10,5 +10,23 @@ services:
       - "8686:8080"
     restart: unless-stopped
     environment:
+      # Puerto interno donde escucha Node
+      PORT: ${PORT:-8080}
       # DB
-      DBPORT: ${DBPORT}
+      DBHOST: ${DBHOST}
+      DBPORT: ${DBPORT:-5432}
+      DBNAME: ${DBNAME}
+      DBUSER: ${DBUSER}
+      DBPWD: ${DBPWD}
+
+      # Otros 
+      EUSER: ${EUSER}
+      EPASS: ${EPASS}
+      EHOST: ${EHOST}
+      EPORT: ${EPORT}
+      SEED: ${SEED}
+      TIME_TOKEN: ${TIME_TOKEN}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+      ZACATUCHE_HOST: ${ZACATUCHE_HOST}
+      MANATI_HOST: ${MANATI_HOST}
+      SPECIES_HOST: ${SPECIES_HOST}
