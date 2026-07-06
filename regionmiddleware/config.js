@@ -11,6 +11,7 @@ const config = {
     host: process.env.DBHOST,
     port: process.env.DBPORT,
     application_name: 'expressMiddleware',
+    ssl: false,
     poolSize: 10,
   },
   port: process.env.PORT,
